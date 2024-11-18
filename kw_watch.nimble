@@ -11,3 +11,4 @@ bin           = @["kw_watch"]
 # Dependencies
 
 requires "nim >= 1.6.14"
+requires "dimscord >= 1.6.0"
