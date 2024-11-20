@@ -1,8 +1,8 @@
-import dimscord, times, options, strutils, asyncdispatch
+import dimscord, times, options, strutils, asyncdispatch, os
 
 import cmd_handler
 
-let discord = newDiscordClient(readFile("/home/vm-server/discord_token.txt").strip)
+let discord = newDiscordClient(readFile("/home/" & getEnv("USER") & "/discord_token.txt").strip)
 
 var
   cmd:TCMDHandler
