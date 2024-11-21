@@ -1,7 +1,8 @@
 import os
 
 var tmp = 0
-while true:
-    echo("num: " & $(tmp))
+while tmp < 10:
+    echo("testcmd: " & $(tmp))
     tmp = tmp + 1
     sleep(1000)
+echo "testcmd: goodbye!"

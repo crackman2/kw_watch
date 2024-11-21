@@ -1,22 +1,38 @@
 import dimscord, os, osproc, asyncdispatch, strutils, options, streams, times
 
+import spruch
+
 
 var
   last_channel_id:string
   watch_command_active:bool = false
-
+  
 type
   TCMDHandler* = object
     discord:DiscordClient
-    
+    command_whitelist:seq[string]
+
 proc createTCMDHandler*(discord:DiscordClient):TCMDHandler =
   result.discord = discord
+  var cmd_list:string
+  try:
+    cmd_list = readFile("whitelist.txt")
+    result.command_whitelist = cmd_list.splitLines
+  except:
+    echo "ERROR: couldn't read whitelist"
+    result.command_whitelist = @[""]
 
 proc sendMsg(self:TCMDHandler, m:string, channel_id:string):Future[bool] {.async.} =
   discard await self.discord.api.sendMessage(channel_id, m)
   return true
 
 proc watchCommand(self:TCMDHandler, command:string, channel_id:string):Future[bool] {.async.} =
+  if not (command in self.command_whitelist):
+    discard self.sendMsg("Wer glauben Sie eigentlich wer Sie sind? Das dürfen Sie nicht und Sie werden von meinem Anwalt hören.", channel_id)
+    echo "ERROR: command not in whitelist. stopping !watch"
+    watch_command_active = false
+    return false
+
   echo "running command: " & command
   var
     process_handle = startProcess("./" & command)
@@ -28,18 +44,25 @@ proc watchCommand(self:TCMDHandler, command:string, channel_id:string):Future[bo
   echo "msg id: " & msg.id
 
   while watch_command_active:
-    let log_line = readLine(output_handle)
-    echo "log_line: " & log_line
-    
+    var log_line = ""
+
+    try:
+      log_line = readLine(output_handle)
+      echo "kw_watch '" & command& "': " & log_line
+    except:
+      echo "ERROR: couldn't read stdout. Exiting Loop"
+      watch_command_active = false
+      break
+
     if log_line.len > 0:
       log_stack.add(log_line)
-      echo "new log_stack length: " & $(log_stack.len)
+      #echo "new log_stack length: " & $(log_stack.len)
       if log_stack.len > 10:
         log_stack.delete(0)
-        echo "deleted last enrty"
+        #echo "deleted last enrty"
 
     if (epochTime() - last_print_time) >= 5:
-      echo "printing log to msg"
+      #echo "printing log to msg"
       last_print_time = epochTime()
       var reverse_log_stack = ""
       var tmp_seq = newSeq[string](log_stack.len)
@@ -48,11 +71,11 @@ proc watchCommand(self:TCMDHandler, command:string, channel_id:string):Future[bo
        
       for i in 0..high(log_stack):
         reverse_log_stack &= log_stack[i] & "\n"
-      echo "reverse_log_stack: \n" & reverse_log_stack
+      #echo "reverse_log_stack: \n" & reverse_log_stack
       
-      echo tmp_seq
+      #echo tmp_seq
       
-      echo "log_stack:\n" & reverse_log_stack
+      #echo "log_stack:\n" & reverse_log_stack
       
       var edit_msg = await self.discord.api.editMessage(channel_id, msg.id, embeds = @[Embed(
         title: some "watching: '" & command & "'",
@@ -61,12 +84,12 @@ proc watchCommand(self:TCMDHandler, command:string, channel_id:string):Future[bo
         )]
       )
 
-      echo "SPAM!"
-      echo edit_msg.id
-      echo edit_msg.content
+      #echo "SPAM!"
+      #echo edit_msg.id
+      #echo edit_msg.content
       
       
-      echo "printed successfully :)" 
+      #echo "printed successfully :)" 
   
   close(process_handle)
   discard self.sendMsg("watch beendet", channel_id)
@@ -81,7 +104,7 @@ proc handleMessage*(self:TCMDHandler, m:Message):Future[bool] {.async.} =
 
   case mtokens[0]:
     of "!ping":
-      discard self.sendMsg("Da haben Sie mich falsch angepingt, Sie hätten das anders machen müssen!", m.channel_id)
+      discard self.sendMsg(spruchPing() ,m.channel_id)
     of "!pwd":
       var curdir = getCurrentDir()
       discard self.sendMsg("Derzeitig befinde ich mich in: " & curdir, m.channel_id)
@@ -91,7 +114,7 @@ proc handleMessage*(self:TCMDHandler, m:Message):Future[bool] {.async.} =
       discard self.sendMsg("Ich bin jetzt in: " & getCurrentDir(), m.channel_id)
     of "!watch":
       var combine_tokens  = mtokens[1..^1].join(" ")
-      discard self.sendMsg("Nein. Also ich sage Ihnen nur, was sie schon wieder angerichtet haben: '" & combine_tokens & "'", m.channel_id)
+      discard self.sendMsg( spruchCommandExecuted() & " : '" & combine_tokens & "'", m.channel_id)
       watch_command_active = true      
       discard watchCommand(self, combine_tokens, m.channel_id)
     of "!stop":
