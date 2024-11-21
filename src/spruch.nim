@@ -6,7 +6,7 @@ var
   last_index_ping = -1
   last_index_commandexecuted = -1
 
-  sprueche_ping = [
+  sprueche_ping = @[
     "Da haben Sie mich falsch angepingt, Sie hätten das anders machen müssen!",
     "Sie halten sich wohl für besonders lustig, was?",
     "Ich erzähle Ihnen jetzt mal was: Das Pingen hat war früher viel schneller und einfacher als heutzutage!",
@@ -16,7 +16,7 @@ var
     "So manch einer behauptet ja, dass das Anpingen zum normalen Ablauf dazugehöre. Dies ist ein Trugschluss und das kann ich nicht verstehen und dann muss sowas auch verboten werden!"
   ]
 
-  sprueche_befehl_ausgefuehrt = [
+  sprueche_befehl_ausgefuehrt = @[
     "Nein. Also ich sage Ihnen nur, was sie schon wieder angerichtet haben",
     "Folgendes habe ich meinem Anwalt mitgeteilt",
     "Glauben Sie, sie kommen ungeschoren davon, wenn Sie",
@@ -48,4 +48,28 @@ proc spruchCommandExecuted*():string =
   last_index_commandexecuted = index
   return sprueche_befehl_ausgefuehrt[index]
 
- 
+proc spruchPicker*(topic:string):string =
+  var
+    selected:seq[string]
+    last_index:ptr[int]
+    index:int
+  case topic:
+  of "ping":
+    selected = sprueche_ping
+    last_index = addr last_index_ping
+  of "befehl":
+    selected = sprueche_befehl_ausgefuehrt
+    last_index = addr last_index_commandexecuted
+  else:
+    return "FEHLER: Da weiß ich bald gar nicht was ich dazu sagen soll. Furchtbar sowas."
+  spruchRnd()
+  index = last_index[]
+  while index == last_index[]:
+    index = rand(high(selected))
+  last_index[] = index
+  return selected[index]
+   
+
+
+
+

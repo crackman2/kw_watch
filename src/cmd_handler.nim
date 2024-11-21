@@ -104,7 +104,7 @@ proc handleMessage*(self:TCMDHandler, m:Message):Future[bool] {.async.} =
 
   case mtokens[0]:
     of "!ping":
-      discard self.sendMsg(spruchPing() ,m.channel_id)
+      discard self.sendMsg(spruchPicker("ping"),m.channel_id)
     of "!pwd":
       var curdir = getCurrentDir()
       discard self.sendMsg("Derzeitig befinde ich mich in: " & curdir, m.channel_id)
@@ -114,7 +114,7 @@ proc handleMessage*(self:TCMDHandler, m:Message):Future[bool] {.async.} =
       discard self.sendMsg("Ich bin jetzt in: " & getCurrentDir(), m.channel_id)
     of "!watch":
       var combine_tokens  = mtokens[1..^1].join(" ")
-      discard self.sendMsg( spruchCommandExecuted() & " : '" & combine_tokens & "'", m.channel_id)
+      discard self.sendMsg( spruchPicker("befehl") & " : '" & combine_tokens & "'", m.channel_id)
       watch_command_active = true      
       discard watchCommand(self, combine_tokens, m.channel_id)
     of "!stop":
