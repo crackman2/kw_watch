@@ -56,8 +56,7 @@ proc handleMessage*(self:TCMDHandler, m:Message):Future[bool] {.async.} =
       if mtokens.len > 1:
         combine_tokens  = mtokens[1..^1].join(" ")
         if combine_tokens.strip != "":
-          echo "cmd watch: watch active for [" & combine_tokens & "]"
-          watch_command_active = true      
+          echo "cmd watch: watch active for [" & combine_tokens & "]"    
           discard watchCommand(self, combine_tokens, m.channel_id)
         else:
           echo "cmd WATCH: input empty?"

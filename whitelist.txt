@@ -1,1 +1,2 @@
-testcmd
+./testcmd
+/home/seife/script/python/audiocraft/generate/startgen

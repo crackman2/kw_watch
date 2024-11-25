@@ -1,9 +1,12 @@
 import dimscord, os, strutils, osproc, asyncdispatch, options
 
-import global_classes, watchcmd
+import global_classes, watchcmd, spruch
 
 var
   prompt_list:seq[string]
+  post_index_start = -1
+  post_index_end = -1
+  post_chunk_size = 4
 
 type
   TAiHandler = object
@@ -75,7 +78,7 @@ del alles
       discard await printPromptList(self, channel_id)
       echo "ai : adding prompts"
     else:
-      discard await self.sendMsg("War schon klar, dass Sie es wieder schaffen das falsch zu machen. '!ai <command> <parameter>'", channel_id)
+      discard await self.sendMsg(spruchPicker("aiadderror") & ": '!ai <command> <parameter>'", channel_id)
   of "del":
     if mtokens[2].contains(".."):
       var range_split = mtokens[2].split("..")
@@ -122,8 +125,73 @@ del alles
   of "list":
     discard await printPromptList(self, channel_id)
     echo "ai list: lisitng prompts"
+  of "gen":
+    var length_check = command.splitWhitespace
+    if length_check.len == 2:
+      if prompt_list.len > 0:
+        var
+          gen_path = readFile("generate_path.txt")
+          combine_list = ""
+          curdir = getCurrentDir()
+        echo "ai gen: writing prompts to file"
+        for i in 0..high(prompt_list):
+          if i != high(prompt_list):
+            combine_list &= prompt_list[i] & "\n"
+          else:
+            combine_list &= prompt_list[i]
+        writeFile(gen_path & "prompts.txt", combine_list)
+        echo "ai gen: prompts written to file"
+        setCurrentDir(gen_path)
+        echo "ai gen: changed working dir to [" & gen_path & "]"
+        echo "ai gen: running cleanup script"
+        var trash = execCmd(gen_path & "cleanup.sh")
+        echo "ai gen: starting generation"
+        discard watchCommand(self, "startgen", channel_id, true, gen_path)
+        echo "ai gen: changing dir back to original working dir [" & curdir & "]"
+        setCurrentDir(curdir)
+        echo "ai gen: command finished"
+        post_index_start = -1
+        post_index_end = -1
+      else:
+         echo "ai gen: prompt list empty. cant generate"
+         discard await self.sendMsg(spruchPicker("aigenemptypromptlisterror"), channel_id)
+    else:
+      echo "ai gen: wrong number of args"
+      discard await self.sendMsg(spruchPicker("aigenargserror"), channel_id)
+  of "post":
+    var
+      send_seq:seq[DiscordFile]
+      gen_path = readFile("generate_path.txt")
+    echo "ai post: checking post_index_start.."
+    if post_index_start == -1:
+      echo "ai post: setting post_index_start to 0"
+      post_index_start = 0
+
+    if post_index_start + post_chunk_size <= high(prompt_list):
+      echo "ai post: post_index_end wont overshoot high of prompt_list"
+      post_index_end = post_index_start + post_chunk_size
+    else:
+      echo "ai post: clamped post_index_end to last index of prompt_list"
+      post_index_end = high(prompt_list)
+
+      echo "ai post: slicing prompts to send_seq"
+    for i in post_index_start..post_index_end:
+      try:
+        var tmp_file = DiscordFile(name: $(i) & "_" & prompt_list[i].replace(" ","_") & ".wav", body: readFile(gen_path & $(i) & "_" & prompt_list[i].replace(" ","_") & ".wav"))
+        send_seq.add(tmp_file)
+      except:
+        echo "ai post: creating tmp_file threw an exception! index: [" & $(i) & "]"
+    #send msg here
+    echo "ai post: sending files to channel"
+    discard await self.discord.api.sendMessage(channel_id, files=send_seq)
+
+    if post_index_end + 1 <= high(prompt_list):
+      post_index_start = post_index_end + 1
+    else:
+      post_index_start = -1
+      post_index_end = -1
   else:
-    discard await self.sendMsg("Sie müssen schon einen Befehl eingeben. Sonst wird das nichts. '!ai <command> <parameter>'", channel_id)
+    discard await self.sendMsg(spruchPicker("aierror") & " : '!ai <command> <parameter>'", channel_id)
     echo "ai: missing command"
 
 

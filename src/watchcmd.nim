@@ -10,35 +10,45 @@ var
 proc readLineAsync*(s:Stream):Future[string] {.async.} =
   return readLine(s)
 
-proc watchCommand*(self:TCMDHandler, command:string, channel_id:string):Future[bool] {.async.} =
-  if not (command in self.command_whitelist):
+proc watchCommand*(self:TCMDHandler, command:string, channel_id:string, force:bool = false, workingdir:string = ""):Future[bool] {.async.} =
+  if not (command in self.command_whitelist) and not force:
     #discard self.sendMsg("Wer glauben Sie eigentlich wer Sie sind? Das dürfen Sie nicht und Sie werden von meinem Anwalt hören.", channel_id)
-    echo "ERROR: command not in whitelist. stopping !watch"
+    echo "watchCommand: command not in whitelist. stopping !watch"
     discard await self.sendMsg(spruchPicker("watcherror"), channel_id)
     watch_command_active = false
     raise newException(ValueError, "invalid command")
     return false
 
-  echo "running command: " & command
+  echo "watchCommand: running command: " & command
   discard await self.sendMsg(spruchPicker("watch") & " : '" & command & "'", channel_id)
 
   var
-    process_handle = startProcess("./" & command)
+    curdir = ""
+
+  if workingdir != "":
+    curdir = getCurrentDir()
+    setCurrentDir(workingdir)
+    echo "watchCommand: changed working dir to [" & workingdir & "]"
+
+
+  var
+    process_handle = startProcess(command)
     output_handle = outputStream(process_handle)
-    msg = await self.discord.api.sendMessage(channel_id, "temp")
+    msg = await self.discord.api.sendMessage(channel_id, "```-> hier wird gleich was stehen. moment...```")
     log_stack = newSeq[string]()
     last_print_time = epochTime()
   
-  echo "msg id: " & msg.id
+  echo "watchCommand: msg id: " & msg.id
 
+  watch_command_active = true
   while watch_command_active:
     var log_line = ""
 
     try:
       log_line = await readLineAsync(output_handle)
-      echo "kw_watch '" & command& "': " & log_line
+      echo "watchCommand: output: '" & command& "': " & log_line
     except:
-      echo "ERROR: couldn't read stdout. Exiting Loop"
+      echo "watchCommand : couldn't read stdout. Exiting Loop"
       watch_command_active = false
       break
 
@@ -79,7 +89,11 @@ proc watchCommand*(self:TCMDHandler, command:string, channel_id:string):Future[b
       
       #echo "printed successfully :)" 
   
+  if workingdir != "":
+    setCurrentDir(curdir)
+    echo "watchCommand: changed dir back to [" & curdir & "]"
+
   close(process_handle)
-  #discard self.sendMsg("watch beendet", channel_id)
-  echo "watch ended"
+  discard self.sendMsg("Dieses 'watch' ist jetzt abgeschlossen. Alles so komisch Englisch. Armes Deutschland.", channel_id)
+  echo "watchCommand: watch ended"
   return true

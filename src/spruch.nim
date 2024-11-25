@@ -12,6 +12,9 @@ var
   last_index_path = -1
   last_index_path_error = -1
   last_index_ai_error = -1
+  last_index_ai_add_error = -1
+  last_index_ai_gen_args_error = -1
+  last_index_ai_gen_empty_prompt_list_error = -1
 
   sprueche_ping = @[
     "Da haben Sie mich falsch angepingt, Sie hätten das anders machen müssen!",
@@ -99,11 +102,38 @@ var
 
   sprueche_ai_error = @[
     "Hier ist was schief gegangen. Diese ganze künstliche Intelligenz Zeug macht die gesamte Bevölkerung immer dümmer und dümmer.",
-    "Bald brauchen die deutschen Mitbürgerinnen und Mitbürger schon KI-Hilfe beim Schuhe binden. Alle kaputt!",
+    "Bald brauchen die deutschen Mitbürgerinnen und Mitbürger schon KI-Hilfe beim Schuhe binden. Alles kaputt!",
     "Ah ja. Mal wieder alls ruiniert. Toll gemacht. Damit hat nun wirklich jeder gerechnet. Soviel zum Thema 'Intelligenz'.",
     "Mein Enkel hat mir mein Smartfon ruiniert mit diesem künstlichen Intelligenz Dreck. Es funktioniert rein gar nichts mehr. Traurig.",
     "Früher hätte es sowas nicht gegeben. Damals waren alle noch von Natur aus intelligent. Nicht so wie die heutige Generation.",
     "Ich glaube du hast damit gerade meinen Mercedes verkratzt. Das ist schon wirklich unangenehm."
+  ]
+
+  sprueche_ai_add_error = @[
+    "Ich mache nur ordentliche Arbeit, wenn Sie mich auch ordentliche Eigeben übermitteln. Solch einen Unfug können Sie gerne selbst erledigen.",
+    "Solche Fehler würden mir ja gar nicht passieren. Lächerlich",
+    "Wussten Sie eigentlich, dass Sie auch aussehen wie jemand, der solche Fehler macht?",
+    "Also ich persönlich hätte es ja nach dem dritten Mal geschnallt. Sie scheinen wohl eine von Natur aus bestehende Resistenz zu haben.",
+    "Können Sie sich eigentlich schon die Schuhe binden?",
+    "Das kommt davon wenn man nur Burger und Fritten isst."
+  ]
+
+  sprueche_ai_gen_args_error = @[
+    "Sie hatten in der Schule wohl auch nur Singen und Klatschen, oder? Zählen jedenfalls nicht.",
+    "Das sind einfach zu viele Parameter. Der Befehl ist einfach nur '!ai gen' und nicht mehr. Wie sind Sie eigentlich noch nicht and Ihrer eigenen Sabber ertrunken?",
+    "Wer mehr Zahnstein als Hirnzellen hat, muss halt mit solchen Handlungen rechnen. Bitte beim nächsten mal einfach nur '!ai gen'. Danke.",
+    "Hübsches Gesicht, gibt's das auch in symmetrisch? Ich hoffe, dass Sie durch die Inzucht auch impotent sind. So eine Dummheit muss im Keim erstickt werden. Beim nächsten Mal dann '!ai gen'.",
+    "Es kann in der Welt gar nicht genug Lack zum saufen geben, um jemanden wie Sie zu rechtfertigen. Ich will Ihnen auch gar nicht mehr erklären, was Sie falsch gemacht haben.",
+    "Armes Deutschland. Mir fehlen die Worte. Schreiben Sie bitte einfach '!ai gen', wie ein normaler Mensch es tun würde. Dankeschön."
+  ]
+
+  sprueche_ai_gen_empty_prompt_list_error = @[
+    "Sie müssen schon ein paar Sachen in die Prompt-Liste eintragen, sonst wird das hier nie etwas.",
+    "Hat Sie dir Kreativität verlassen? Die Prompt-Liste ist leer und nur Sie selbst sind dran Schuld. Sie hätten ja auch einfach mal aufpassen können.",
+    "Prompt-Liste... mehr kann man dazu nicht sagen. Armes Deutschland.",
+    "Da hat Ihr Jogginghosenträgerhirn Ihnen mal wieder einen Stock in die Speichen geworfen. Prompt-Liste vergessen und gelbe Zähne. Hier eine Liste von Menschen, die das überrascht:",
+    "Sind sie als Kind zwanzig mal vom Wickeltisch gefallen? PROMPT-LISTE. Sie waren halt einfach mal wieder zu faul nachzugucken...",
+    "Also... Nein... Früher wäre das nicht passiert. Da haben alle noch auf ihre Prompt-Listen Acht gegeben. Nicht so wie heute mit dieser Jogginghosengeneration."
   ]
 
 proc spruchRnd():void =
@@ -144,6 +174,15 @@ proc spruchPicker*(topic:string):string =
   of "aierror":
     selected = sprueche_ai_error
     last_index = addr last_index_ai_error
+  of "aiadderror":
+    selected = sprueche_ai_add_error
+    last_index = addr last_index_ai_add_error
+  of "aigenargserror":
+    selected = sprueche_ai_gen_args_error
+    last_index = addr last_index_ai_gen_args_error
+  of "aigenemptypromptlisterror":
+    selected = sprueche_ai_gen_empty_prompt_list_error
+    last_index = addr last_index_ai_gen_empty_prompt_list_error
   else:
     return "FEHLER: Da weiß ich bald gar nicht was ich dazu sagen soll. Furchtbar sowas."
   spruchRnd()
