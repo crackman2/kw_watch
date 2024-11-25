@@ -1,4 +1,6 @@
-import dimscord, strutils, asyncdispatch
+import dimscord, strutils, asyncdispatch, streams, os, osproc, times, options
+
+import spruch
 
 type
   TCMDHandler* = object
@@ -19,5 +21,3 @@ proc createTCMDHandler*(discord:DiscordClient):TCMDHandler =
 proc sendMsg*(self:TCMDHandler, m:string, channel_id:string):Future[bool] {.async.} =
   discard await self.discord.api.sendMessage(channel_id, m)
   return true
-
-
