@@ -50,6 +50,9 @@ proc aiCommand*(self:TCMDHandler, command:string, mtokens:seq[string], channel_i
   of "help":
     discard await self.sendMsg("""Sie sehen auch aus als würden Sie hilfe benötigen:
 ```
+list
+-> Prompt-Liste anzeigen
+
 add <Prompt Text>
 -> Fügt Prompt mit Text hinzu
 
@@ -70,6 +73,7 @@ del alles
       command_lines[0] = first_line[2..^1].join(" ")
       prompt_list.add(command_lines)
       discard await printPromptList(self, channel_id)
+      echo "ai : adding prompts"
     else:
       discard await self.sendMsg("War schon klar, dass Sie es wieder schaffen das falsch zu machen. '!ai <command> <parameter>'", channel_id)
   of "del":
@@ -90,31 +94,37 @@ del alles
                   prompt_list.delete(i)
                 discard await printPromptList(self, channel_id)
               else:
-                echo "E: second range out of range"
+                echo "ai del: second range out of range"
             else:
-              echo "E: first range out of range"
+              echo "ai del: first range out of range"
           else:
-            echo "E: first range is not smaller than second"
+            echo "ai del: first range is not smaller than second"
         else:
-          echo "E: second number doesnt parse as int"
+          echo "ai del: second number doesnt parse as int"
       else:
-        echo "E: first number doesnt parse as int"
+        echo "ai del: first number doesnt parse as int"
     else:
       if tryParseInt(mtokens[2]):
         if (parseInt(mtokens[2]) < prompt_list.len) and (parseInt(mtokens[2]) >= 0):
           prompt_list.delete(parseInt(mtokens[2]))
           discard await printPromptList(self, channel_id)
+          echo "ai del: deleting index [" & mtokens[2] & "]"
         else:
           discard await self.sendMsg("Den Eintrag git es in der List gar nicht. Schon wieder alles falsch gemacht! '!ai del <index>'", channel_id)
+          echo "ai del: invalid index"
       elif mtokens[2] == "alles":
         prompt_list = @[]
         discard await printPromptList(self, channel_id)
+        echo "ai del: deleting prompt list"
       else:
         discard await self.sendMsg("Sie müssen da eine Zahl eingeben. Was glauben Sie eigentlich was mit Index gemeint ist? '!ai del <index>' oder '!ai del <index start>..<index ende>'", channel_id)
+        echo "ai: invalid command"
   of "list":
     discard await printPromptList(self, channel_id)
+    echo "ai list: lisitng prompts"
   else:
     discard await self.sendMsg("Sie müssen schon einen Befehl eingeben. Sonst wird das nichts. '!ai <command> <parameter>'", channel_id)
+    echo "ai: missing command"
 
 
 

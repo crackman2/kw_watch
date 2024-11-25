@@ -21,11 +21,14 @@ proc handleMessage*(self:TCMDHandler, m:Message):Future[bool] {.async.} =
         color: some 0x7789ec
         )]
       )
+      echo "cmd: printing help"
     of "!ping":
       discard self.sendMsg(spruchPicker("ping"),m.channel_id)
+      echo "cmd: pinging"
     of "!pwd":
       var curdir = getCurrentDir()
       discard self.sendMsg(spruchPicker("pwd") & curdir, m.channel_id)
+      echo "cmd: printing pwd: " & curdir
     of "!path":
       var
         combine_tokens = ""
@@ -37,10 +40,13 @@ proc handleMessage*(self:TCMDHandler, m:Message):Future[bool] {.async.} =
             setCurrentDir(combine_tokens)
             discard self.sendMsg(spruchPicker("path") & getCurrentDir(), m.channel_id)
           except:
+            echo "cmd path: failed changing directory"
             errors = true
         else:
+          echo "cmd path: input path empty?"
           errors = true
       else:
+        echo "cmd path: missing arguments"
         errors = true
       if errors: discard self.sendMsg(spruchPicker("patherror"), m.channel_id)
     of "!watch":
@@ -50,19 +56,24 @@ proc handleMessage*(self:TCMDHandler, m:Message):Future[bool] {.async.} =
       if mtokens.len > 1:
         combine_tokens  = mtokens[1..^1].join(" ")
         if combine_tokens.strip != "":
+          echo "cmd watch: watch active for [" & combine_tokens & "]"
           watch_command_active = true      
           discard watchCommand(self, combine_tokens, m.channel_id)
         else:
+          echo "cmd WATCH: input empty?"
           errors = true
       else:
+        echo "cmd watch: missing arguments"
         errors = true
       if errors: discard self.sendMsg(spruchPicker("watcherror"), m.channel_id)
     of "!stop":
       if watch_command_active:
         discard self.sendMsg(spruchPicker("stop"), m.channel_id)
         watch_command_active = false
+        echo "cmd stop: watch stopped"
       else:
         discard self.sendMsg(spruchPicker("stoperror"), m.channel_id)
+        echo "cmd stop: cant stop. already stopped"
     of "!ai":
       var
         combine_tokens = ""
@@ -70,10 +81,13 @@ proc handleMessage*(self:TCMDHandler, m:Message):Future[bool] {.async.} =
       if mtokens.len > 1:
         combine_tokens  = mtokens[1..^1].join(" ")
         if combine_tokens.strip != "":
+          echo "cmd ai: entering ai commands"
           discard aiCommand(self, m.content, mtokens, m.channel_id)
         else:
+          echo "cmd ai: input empty?"
           errors = true
       else:
+        echo "cmd ai: missing arguments"
         errors = true
       if errors: discard self.sendMsg(spruchPicker("aierror"), m.channel_id)
     else:
