@@ -1,6 +1,6 @@
 import dimscord, times, options, strutils, asyncdispatch, os
 
-import cmd_handler
+import global_classes, cmd_handler
 
 let discord = newDiscordClient(readFile("/home/" & getEnv("USER") & "/discord_token.txt").strip)
 

@@ -11,6 +11,7 @@ var
   last_index_pwd = -1
   last_index_path = -1
   last_index_path_error = -1
+  last_index_ai_error = -1
 
   sprueche_ping = @[
     "Da haben Sie mich falsch angepingt, Sie hätten das anders machen müssen!",
@@ -96,6 +97,15 @@ var
     "Da kommen Sie wohl her, oder? Wie die ganzen anderen nutzlosen Jogginghosenträger."
   ]
 
+  sprueche_ai_error = @[
+    "Hier ist was schief gegangen. Diese ganze künstliche Intelligenz Zeug macht die gesamte Bevölkerung immer dümmer und dümmer.",
+    "Bald brauchen die deutschen Mitbürgerinnen und Mitbürger schon KI-Hilfe beim Schuhe binden. Alle kaputt!",
+    "Ah ja. Mal wieder alls ruiniert. Toll gemacht. Damit hat nun wirklich jeder gerechnet. Soviel zum Thema 'Intelligenz'.",
+    "Mein Enkel hat mir mein Smartfon ruiniert mit diesem künstlichen Intelligenz Dreck. Es funktioniert rein gar nichts mehr. Traurig.",
+    "Früher hätte es sowas nicht gegeben. Damals waren alle noch von Natur aus intelligent. Nicht so wie die heutige Generation.",
+    "Ich glaube du hast damit gerade meinen Mercedes verkratzt. Das ist schon wirklich unangenehm."
+  ]
+
 proc spruchRnd():void =
   if not randomize_init:
     randomize()
@@ -131,6 +141,9 @@ proc spruchPicker*(topic:string):string =
   of "patherror":
     selected = sprueche_path_error
     last_index = addr last_index_path_error
+  of "aierror":
+    selected = sprueche_ai_error
+    last_index = addr last_index_ai_error
   else:
     return "FEHLER: Da weiß ich bald gar nicht was ich dazu sagen soll. Furchtbar sowas."
   spruchRnd()
