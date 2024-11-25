@@ -64,6 +64,10 @@ del <index> oder del <index start>..<index ende>
 
 del alles
 -> Löscht gesamte Prompt-Liste
+
+post <optionaler index>
+-> ohne index werden einfach die neuesten generierten prompts gepostet. looped auch wieder zum anfang
+-> index um einzelnen sound zu posten
 ```
     """, channel_id)
   of "add":
@@ -159,37 +163,54 @@ del alles
       echo "ai gen: wrong number of args"
       discard await self.sendMsg(spruchPicker("aigenargserror"), channel_id)
   of "post":
-    var
-      send_seq:seq[DiscordFile]
-      gen_path = readFile("generate_path.txt")
-    echo "ai post: checking post_index_start.."
-    if post_index_start == -1:
-      echo "ai post: setting post_index_start to 0"
-      post_index_start = 0
+    if mtokens.len == 2:
+      var
+        send_seq:seq[DiscordFile]
+        gen_path = readFile("generate_path.txt")
+      echo "ai post: checking post_index_start.."
+      if post_index_start == -1:
+        echo "ai post: setting post_index_start to 0"
+        post_index_start = 0
 
-    if post_index_start + post_chunk_size <= high(prompt_list):
-      echo "ai post: post_index_end wont overshoot high of prompt_list"
-      post_index_end = post_index_start + post_chunk_size
+      if post_index_start + post_chunk_size <= high(prompt_list):
+        echo "ai post: post_index_end wont overshoot high of prompt_list"
+        post_index_end = post_index_start + post_chunk_size
+      else:
+        echo "ai post: clamped post_index_end to last index of prompt_list"
+        post_index_end = high(prompt_list)
+
+        echo "ai post: slicing prompts to send_seq"
+      for i in post_index_start..post_index_end:
+        try:
+          var tmp_file = DiscordFile(name: $(i) & "_" & prompt_list[i].replace(" ","_") & ".wav", body: readFile(gen_path & $(i) & "_" & prompt_list[i].replace(" ","_") & ".wav"))
+          send_seq.add(tmp_file)
+        except:
+          echo "ai post: creating tmp_file threw an exception! index: [" & $(i) & "]"
+      #send msg here
+      echo "ai post: sending files to channel"
+      discard await self.discord.api.sendMessage(channel_id, files=send_seq)
+
+      if post_index_end + 1 <= high(prompt_list):
+        post_index_start = post_index_end + 1
+      else:
+        post_index_start = -1
+        post_index_end = -1
     else:
-      echo "ai post: clamped post_index_end to last index of prompt_list"
-      post_index_end = high(prompt_list)
-
-      echo "ai post: slicing prompts to send_seq"
-    for i in post_index_start..post_index_end:
-      try:
-        var tmp_file = DiscordFile(name: $(i) & "_" & prompt_list[i].replace(" ","_") & ".wav", body: readFile(gen_path & $(i) & "_" & prompt_list[i].replace(" ","_") & ".wav"))
-        send_seq.add(tmp_file)
-      except:
-        echo "ai post: creating tmp_file threw an exception! index: [" & $(i) & "]"
-    #send msg here
-    echo "ai post: sending files to channel"
-    discard await self.discord.api.sendMessage(channel_id, files=send_seq)
-
-    if post_index_end + 1 <= high(prompt_list):
-      post_index_start = post_index_end + 1
-    else:
-      post_index_start = -1
-      post_index_end = -1
+      if tryParseInt(mtokens[2]):
+        if (parseInt(mtokens[2]) <= high(prompt_list)) and (parseInt(mtokens[2]) >= 0):
+          try:
+            var gen_path = readFile("generate_path.txt")
+            var tmp_file = DiscordFile(name: mtokens[2] & "_" & prompt_list[parseInt(mtokens[2])].replace(" ","_") & ".wav", body: readFile(gen_path & mtokens[2] & "_" & prompt_list[parseInt(mtokens[2])].replace(" ","_") & ".wav"))
+            var send_seq:seq[DiscordFile]
+            send_seq.add(tmp_file)
+            discard await self.discord.api.sendMessage(channel_id, files=send_seq)
+            echo "ai post (single index): posting sound with index [" & mtokens[2] & "]"
+          except:
+            echo "ai post (single index): something went wrong. exception!"
+        else:
+          echo "ai post (single index): index out of range"
+      else:
+        echo "ai post (single index): couldnt post sound via single index. index is not a number"
   else:
     discard await self.sendMsg(spruchPicker("aierror") & " : '!ai <command> <parameter>'", channel_id)
     echo "ai: missing command"
