@@ -2,7 +2,16 @@ import dimscord, times, options, strutils, asyncdispatch, os
 
 import global_classes, cmd_handler
 
-let discord = newDiscordClient(readFile("/home/" & getEnv("USER") & "/discord_token.txt").strip)
+var homeDir = ""
+
+if getEnv("HOME").len > 0:
+  homeDir = getEnv("HOME")
+elif getEnv("USERPROFILE").len > 0:
+  homeDir = getEnv("USERPROFILE")
+else:
+  echo "HOME DIR NOT FOUND???"
+
+let discord = newDiscordClient(readFile(homeDir & "/discord_token.txt").strip)
 
 var
   cmd:TCMDHandler

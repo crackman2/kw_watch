@@ -1,6 +1,6 @@
 import dimscord, os, strutils, osproc, asyncdispatch, options
 
-import global_classes, watchcmd, spruch
+import global_classes, watchcmd, spruch, cleanup
 
 var
   prompt_list:seq[string]
@@ -147,8 +147,9 @@ post <optionaler index>
         echo "ai gen: prompts written to file"
         setCurrentDir(gen_path)
         echo "ai gen: changed working dir to [" & gen_path & "]"
-        echo "ai gen: running cleanup script"
-        var trash = execCmd(gen_path & "cleanup.sh")
+        echo "ai gen: running cleanup function"
+        #var trash = execCmd(gen_path & "cleanup.sh")
+        cleanupWavFiles(gen_path)
         echo "ai gen: starting generation"
         discard watchCommand(self, "startgen", channel_id, true, gen_path)
         echo "ai gen: changing dir back to original working dir [" & curdir & "]"

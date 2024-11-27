@@ -42,53 +42,58 @@ proc watchCommand*(self:TCMDHandler, command:string, channel_id:string, force:bo
 
   watch_command_active = true
   while watch_command_active:
-    var log_line = ""
-
     try:
-      log_line = await readLineAsync(output_handle)
-      echo "watchCommand: output: '" & command& "': " & log_line
+      var log_line = ""
+
+      try:
+        log_line = await readLineAsync(output_handle)
+        echo "watchCommand: output: '" & command& "': " & log_line
+      except:
+        echo "watchCommand : couldn't read stdout. Exiting Loop"
+        watch_command_active = false
+        break
+
+      if log_line.len > 0:
+        log_stack.add(log_line)
+        #echo "new log_stack length: " & $(log_stack.len)
+        if log_stack.len > 10:
+          log_stack.delete(0)
+          #echo "deleted last enrty"
+
+      if (epochTime() - last_print_time) >= 5:
+        #echo "printing log to msg"
+        last_print_time = epochTime()
+        var reverse_log_stack = ""
+        var tmp_seq = newSeq[string](log_stack.len)
+        for i, x in log_stack:
+          tmp_seq[high(tmp_seq) - i] = x
+        
+        for i in 0..high(log_stack):
+          reverse_log_stack &= log_stack[i] & "\n"
+        #echo "reverse_log_stack: \n" & reverse_log_stack
+        
+        #echo tmp_seq
+        
+        #echo "log_stack:\n" & reverse_log_stack
+        
+        var edit_msg = await self.discord.api.editMessage(channel_id, msg.id, embeds = @[Embed(
+          title: some "watching: '" & command & "'",
+          description: some "```" & reverse_log_stack & "```",
+          color: some 0x7789ec
+          )]
+        )
+
+        #echo "SPAM!"
+        #echo edit_msg.id
+        #echo edit_msg.content
+        
+        
+        #echo "printed successfully :)" 
     except:
-      echo "watchCommand : couldn't read stdout. Exiting Loop"
+      echo "EXCEPTION: something went terribly wrong in the watch command. exiting loop"
       watch_command_active = false
-      break
 
-    if log_line.len > 0:
-      log_stack.add(log_line)
-      #echo "new log_stack length: " & $(log_stack.len)
-      if log_stack.len > 10:
-        log_stack.delete(0)
-        #echo "deleted last enrty"
 
-    if (epochTime() - last_print_time) >= 5:
-      #echo "printing log to msg"
-      last_print_time = epochTime()
-      var reverse_log_stack = ""
-      var tmp_seq = newSeq[string](log_stack.len)
-      for i, x in log_stack:
-        tmp_seq[high(tmp_seq) - i] = x
-       
-      for i in 0..high(log_stack):
-        reverse_log_stack &= log_stack[i] & "\n"
-      #echo "reverse_log_stack: \n" & reverse_log_stack
-      
-      #echo tmp_seq
-      
-      #echo "log_stack:\n" & reverse_log_stack
-      
-      var edit_msg = await self.discord.api.editMessage(channel_id, msg.id, embeds = @[Embed(
-        title: some "watching: '" & command & "'",
-        description: some "```" & reverse_log_stack & "```",
-        color: some 0x7789ec
-        )]
-      )
-
-      #echo "SPAM!"
-      #echo edit_msg.id
-      #echo edit_msg.content
-      
-      
-      #echo "printed successfully :)" 
-  
   if workingdir != "":
     setCurrentDir(curdir)
     echo "watchCommand: changed dir back to [" & curdir & "]"
