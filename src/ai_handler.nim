@@ -7,6 +7,7 @@ var
   post_index_start = -1
   post_index_end = -1
   post_chunk_size = 4
+  ai_gen_lock = false
 
 type
   TAiHandler = object
@@ -132,34 +133,47 @@ post <optionaler index>
   of "gen":
     var length_check = command.splitWhitespace
     if length_check.len == 2:
-      if prompt_list.len > 0:
-        var
-          gen_path = readFile("generate_path.txt")
-          combine_list = ""
-          curdir = getCurrentDir()
-        echo "ai gen: writing prompts to file"
-        for i in 0..high(prompt_list):
-          if i != high(prompt_list):
-            combine_list &= prompt_list[i] & "\n"
-          else:
-            combine_list &= prompt_list[i]
-        writeFile(gen_path & "prompts.txt", combine_list)
-        echo "ai gen: prompts written to file"
-        setCurrentDir(gen_path)
-        echo "ai gen: changed working dir to [" & gen_path & "]"
-        echo "ai gen: running cleanup function"
-        #var trash = execCmd(gen_path & "cleanup.sh")
-        cleanupWavFiles(gen_path)
-        echo "ai gen: starting generation"
-        discard watchCommand(self, "startgen", channel_id, true, gen_path)
-        echo "ai gen: changing dir back to original working dir [" & curdir & "]"
-        setCurrentDir(curdir)
-        echo "ai gen: command finished"
-        post_index_start = -1
-        post_index_end = -1
+      if not ai_gen_lock:
+        ai_gen_lock = true
+        if prompt_list.len > 0:
+          var
+            gen_path = readFile("generate_path.txt")
+            combine_list = ""
+            curdir = getCurrentDir()
+          echo "ai gen: writing prompts to file"
+          for i in 0..high(prompt_list):
+            if i != high(prompt_list):
+              combine_list &= prompt_list[i] & "\n"
+            else:
+              combine_list &= prompt_list[i]
+          writeFile(joinPath(gen_path,"prompts.txt"), combine_list)
+          echo "ai gen: writing to [" & joinPath(gen_path,"prompts.txt") & "]"
+          echo "ai gen: string length: [" & $(combine_list.len) & "]"
+          echo "ai gen: prompts written to file"
+          setCurrentDir(gen_path)
+          echo "ai gen: changed working dir to [" & gen_path & "]"
+          echo "ai gen: running cleanup function"
+          #var trash = execCmd(gen_path & "cleanup.sh")
+          cleanupWavFiles(gen_path)
+          echo "ai gen: starting generation"
+          discard watchCommand(self, "startgen", channel_id, true, gen_path)
+          echo "ai gen: changing dir back to original working dir [" & curdir & "]"
+          setCurrentDir(curdir)
+          echo "ai gen: command finished"
+          post_index_start = -1
+          post_index_end = -1
+        else:
+          echo "ai gen: prompt list empty. cant generate"
+          discard await self.sendMsg(spruchPicker("aigenemptypromptlisterror"), channel_id)
       else:
-         echo "ai gen: prompt list empty. cant generate"
-         discard await self.sendMsg(spruchPicker("aigenemptypromptlisterror"), channel_id)
+        discard await self.sendMsg("Also diese AI-Generationsfunktion ist noch gesperrt. Erstmal '!ai gen clear' ", channel_id)
+    elif length_check.len == 3:
+      if mtokens[2] == "clear":
+        ai_gen_lock = false
+        discard await self.sendMsg("Die AI-Generationsfunktion sollte wieder gehen.", channel_id)
+      else:
+        echo "ai gen: gen clear command wasnt 'clear'"
+        discard await self.sendMsg(spruchPicker("aigenargserror"), channel_id)
     else:
       echo "ai gen: wrong number of args"
       discard await self.sendMsg(spruchPicker("aigenargserror"), channel_id)
@@ -183,7 +197,7 @@ post <optionaler index>
         echo "ai post: slicing prompts to send_seq"
       for i in post_index_start..post_index_end:
         try:
-          var tmp_file = DiscordFile(name: $(i) & "_" & prompt_list[i].replace(" ","_") & ".wav", body: readFile(gen_path & $(i) & "_" & prompt_list[i].replace(" ","_") & ".wav"))
+          var tmp_file = DiscordFile(name: $(i) & "_" & prompt_list[i].replace(" ","_") & ".wav", body: readFile(joinPath(gen_path, $(i) & "_" & prompt_list[i].replace(" ","_") & ".wav")))
           send_seq.add(tmp_file)
         except:
           echo "ai post: creating tmp_file threw an exception! index: [" & $(i) & "]"
