@@ -1,4 +1,4 @@
-import dimscord, os, strutils, osproc, asyncdispatch, options
+import dimscord, os, strutils, asyncdispatch, options
 
 import global_classes, watchcmd, spruch, cleanup
 
@@ -9,31 +9,12 @@ var
   post_chunk_size = 4
   ai_gen_lock = false
 
-type
-  TAiHandler = object
-
 proc tryParseInt(s: string): bool =
   try:
     discard s.parseInt()  # Try to parse the string as an integer
     return true   # Return true if successful
   except ValueError:
     return false  # Return false if parsing fails
-
-proc recombineTokens(mtokens:seq[string]): string =
-  var
-    combine_tokens = ""
-    errors = false
-  if mtokens.len > 1:
-    combine_tokens = mtokens[1..^1].join(" ")
-    if combine_tokens.strip != "":
-      return combine_tokens.strip
-    else:
-      errors = true
-  if errors:
-    return ""
-  else:
-    return combine_tokens.strip
-
 
 proc printPromptList(self:TCMDHandler, channel_id:string):Future[Message] {.async.} =
   var join_list = ""
@@ -69,6 +50,10 @@ del alles
 post <optionaler index>
 -> ohne index werden einfach die neuesten generierten prompts gepostet. looped auch wieder zum anfang
 -> index um einzelnen sound zu posten
+
+gen
+-> startet AI generation, braucht prompts
+-> sperrt gen für das nächste mal, muss mit 'gen clear' entsperrt werden 
 ```
     """, channel_id)
   of "add":
@@ -215,7 +200,7 @@ post <optionaler index>
         if (parseInt(mtokens[2]) <= high(prompt_list)) and (parseInt(mtokens[2]) >= 0):
           try:
             var gen_path = readFile("generate_path.txt")
-            var tmp_file = DiscordFile(name: mtokens[2] & "_" & prompt_list[parseInt(mtokens[2])].replace(" ","_") & ".wav", body: readFile(gen_path & mtokens[2] & "_" & prompt_list[parseInt(mtokens[2])].replace(" ","_") & ".wav"))
+            var tmp_file = DiscordFile(name: mtokens[2] & "_" & prompt_list[parseInt(mtokens[2])].replace(" ","_") & ".wav", body: readFile(joinPath(gen_path, mtokens[2] & "_" & prompt_list[parseInt(mtokens[2])].replace(" ","_") & ".wav")))
             var send_seq:seq[DiscordFile]
             send_seq.add(tmp_file)
             discard await self.discord.api.sendMessage(channel_id, files=send_seq)

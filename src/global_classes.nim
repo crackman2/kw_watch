@@ -1,6 +1,4 @@
-import dimscord, strutils, asyncdispatch, streams, os, osproc, times, options
-
-import spruch
+import dimscord, strutils, asyncdispatch, os, options
 
 type
   TCMDHandler* = object
