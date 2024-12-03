@@ -2,6 +2,15 @@ import dimscord, os, strutils, asyncdispatch, options
 
 import global_classes, watchcmd, spruch, cleanup
 
+var homeDir = ""
+
+if getEnv("HOME").len > 0:
+  homeDir = getEnv("HOME")
+elif getEnv("USERPROFILE").len > 0:
+  homeDir = getEnv("USERPROFILE")
+else:
+  echo "ai_handler: HOME DIR NOT FOUND???"
+
 var
   prompt_list:seq[string]
   post_index_start = -1
@@ -106,9 +115,12 @@ gen
           discard await self.sendMsg("Den Eintrag git es in der List gar nicht. Schon wieder alles falsch gemacht! '!ai del <index>'", channel_id)
           echo "ai del: invalid index"
       elif mtokens[2] == "alles":
-        prompt_list = @[]
-        discard await printPromptList(self, channel_id)
-        echo "ai del: deleting prompt list"
+        if not ai_gen_lock: 
+          prompt_list = @[]
+          discard await printPromptList(self, channel_id)
+          echo "ai del: deleting prompt list"
+        else:
+          discard await self.sendMsg("Um die Liste zu löschen müssen Sie das erstmal entsperren. '!ai gen clear' ", channel_id)
       else:
         discard await self.sendMsg("Sie müssen da eine Zahl eingeben. Was glauben Sie eigentlich was mit Index gemeint ist? '!ai del <index>' oder '!ai del <index start>..<index ende>'", channel_id)
         echo "ai: invalid command"
@@ -122,7 +134,7 @@ gen
         ai_gen_lock = true
         if prompt_list.len > 0:
           var
-            gen_path = readFile("generate_path.txt")
+            gen_path = readFile(joinPath(homeDir,"generate_path.txt"))
             combine_list = ""
             curdir = getCurrentDir()
           echo "ai gen: writing prompts to file"
@@ -166,7 +178,7 @@ gen
     if mtokens.len == 2:
       var
         send_seq:seq[DiscordFile]
-        gen_path = readFile("generate_path.txt")
+        gen_path = readFile(joinPath(homeDir,"generate_path.txt"))
       echo "ai post: checking post_index_start.."
       if post_index_start == -1:
         echo "ai post: setting post_index_start to 0"
@@ -199,7 +211,7 @@ gen
       if tryParseInt(mtokens[2]):
         if (parseInt(mtokens[2]) <= high(prompt_list)) and (parseInt(mtokens[2]) >= 0):
           try:
-            var gen_path = readFile("generate_path.txt")
+            var gen_path = readFile(joinPath(homeDir,"generate_path.txt"))
             var tmp_file = DiscordFile(name: mtokens[2] & "_" & prompt_list[parseInt(mtokens[2])].replace(" ","_") & ".wav", body: readFile(joinPath(gen_path, mtokens[2] & "_" & prompt_list[parseInt(mtokens[2])].replace(" ","_") & ".wav")))
             var send_seq:seq[DiscordFile]
             send_seq.add(tmp_file)
